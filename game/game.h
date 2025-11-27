@@ -36,6 +36,7 @@ typedef struct Jatek {
     SDL_FRect etelt_hol_vegye_fel;
     bool idozitomegy;
     bool vendeg_letezik[4];
+    bool felvette_e_az_etelt;
 }Jatek;
 
 #endif //NHF_GAME_H

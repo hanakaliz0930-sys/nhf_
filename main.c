@@ -160,6 +160,7 @@ int main(int argc, char *argv[]) {
                     case RESUME:
                         resume_hatter(&jatek);
                         resume_gombok(&jatek);
+                        jatek.idozitomegy = false;
                         break;
                     case EXIT:
                         exit_vege(&jatek);

@@ -16,13 +16,12 @@ Uint32 visszahivas(void* adat, SDL_TimerID idozito_ID, Uint32 intervallum) {
 void jatek_hatter(Jatek *jatek) {
         SDL_RenderTexture(jatek->renderer, jatek->kepek.jatek_hatter, NULL, NULL);
         vendegek(jatek);
-        etel(jatek);
+        etel_logika_es_letrehozas(jatek);
         if (!jatek->idozitomegy) {
                 SDL_AddTimer(6000000, visszahivas, jatek);
                 jatek->idozitomegy = true;
         }
 }
-
 bool atfedes(SDL_FRect a, SDL_FRect b)
 {
         return (a.x < b.x + b.w &&
@@ -146,6 +145,7 @@ void palya_elokeszit(Jatek *jatek) {
         jatek->palya[22] = (SDL_FRect) {730,107,110,13};
         jatek->palya[23] = (SDL_FRect) {810,242,90,22};
         jatek->palya[24] = (SDL_FRect) {830,201,29,39};
+        jatek->felvette_e_az_etelt = false;
 }
 
 void vendegek(Jatek *jatek) {
@@ -173,24 +173,40 @@ void vendegek(Jatek *jatek) {
                         //SDL_RenderFillRect(jatek->renderer, &felkialtojel_cel);
                 }
         }
+
+        SDL_FRect jatekos_nagy_hitbox = jatek->jatekos->jatekoskoordinata;
+        jatekos_nagy_hitbox.x -= 20;
+        jatekos_nagy_hitbox.y -= 20;
+        jatekos_nagy_hitbox.w += 40;
+        jatekos_nagy_hitbox.h += 40;
+
+        for (int i = 0; i < 4; i++) {
+                if (SDL_HasRectIntersectionFloat(&jatekos_nagy_hitbox, &vendeg_ulo_koordinatak[i]) && jatek->felvette_e_az_etelt) {
+                        jatek->vendeg_letezik[i] = false;
+                        jatek->felvette_e_az_etelt = false;
+                }
+        }
 }
 
 
-void etel(Jatek *jatek) {
+
+void etel_logika_es_letrehozas(Jatek *jatek) {
         SDL_FRect etel_forras = {419,176,3219,2397};
         SDL_FRect etel_cel = {198,143, 45, 30};
         SDL_RenderTexture(jatek->renderer, jatek->kepek.etel, &etel_forras , &etel_cel);
 
 
-        jatek->etelt_hol_vegye_fel = (SDL_FRect) {116,126,127,100};
-
+        jatek->etelt_hol_vegye_fel = (SDL_FRect) {160,105,90,70};
 
                 if (SDL_HasRectIntersectionFloat(&jatek->etelt_hol_vegye_fel, &jatek->jatekos->jatekoskoordinata)) {
-                        etel_cel.x = jatek->jatekos->jatekoskoordinata.x + 8;
-                        etel_cel.y = jatek->jatekos->jatekoskoordinata.y - 22;
-                        etel_cel.w = 45;
-                        etel_cel.h = 30;
+                        jatek->felvette_e_az_etelt = true;
                 }
+        if (jatek->felvette_e_az_etelt) {
+                etel_cel.x = jatek->jatekos->jatekoskoordinata.x + 8;
+                etel_cel.y = jatek->jatekos->jatekoskoordinata.y - 22;
+                etel_cel.w = 45;
+                etel_cel.h = 30;
+        }
         SDL_RenderTexture(jatek->renderer, jatek->kepek.etel, &etel_forras, &etel_cel);
 }
 

@@ -18,5 +18,5 @@ void jatekos_elokeszit(Jatek *jatek);
 void palya_elokeszit(Jatek *jatek);
 void jatekos_palya_felszabadit(Jatek *jatek);
 void vendegek(Jatek *jatek);
-void etel(Jatek *jatek);
+void etel_logika_es_letrehozas(Jatek *jatek);
 #endif //NHF_JATEK_H
