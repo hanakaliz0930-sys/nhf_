@@ -3,24 +3,41 @@
 //
 #include "jatek.h"
 #include <stdlib.h>
-#include "debugmalloc.h"
+#include "../../debugmalloc.h"
 #include "../game.h"
 #include <time.h>
 
+typedef struct Hivas_fuggveny_param {
+        int i;
+        Jatek *jatek;
+} Hivas_fuggveny_param;
+
+
 Uint32 visszahivas(void* adat, SDL_TimerID idozito_ID, Uint32 intervallum) {
         Jatek* jatek = (Jatek*)adat;
+        SDL_StartTextInput(jatek->window);
         jatek->allapot = RESUME;
+        return 0;
+}
+
+Uint32 jatekos_eltunik_hivasa(void* adat, SDL_TimerID idozito_ID, Uint32 intervallum) {
+        Hivas_fuggveny_param* parameterek = (Hivas_fuggveny_param*)adat;
+        parameterek->jatek->vendeg_letezik[parameterek->i] = false;
+        parameterek->jatek->mikor_kell_kezbe[parameterek->i] = false;
+        free(parameterek);
         return 0;
 }
 
 void jatek_hatter(Jatek *jatek) {
         SDL_RenderTexture(jatek->renderer, jatek->kepek.jatek_hatter, NULL, NULL);
         vendegek(jatek);
-        etel_logika_es_letrehozas(jatek);
+        etel(jatek);
         if (!jatek->idozitomegy) {
-                SDL_AddTimer(6000000, visszahivas, jatek);
+                SDL_AddTimer(60000, visszahivas, jatek);
                 jatek->idozitomegy = true;
         }
+        SDL_FRect cel_betu = {10, 30, 11*20, 30};
+        SDL_RenderTexture(jatek->renderer, jatek->pont_kep,NULL, &cel_betu);
 }
 bool atfedes(SDL_FRect a, SDL_FRect b)
 {
@@ -36,7 +53,7 @@ void jatekos(Jatek *jatek) {
                         if (jatek->event.key.key == SDLK_W || jatek->event.key.key == SDLK_UP) {
                                 bool mehet = true;
                                 SDL_FRect kovetkezo_poz = jatek->jatekos->jatekoskoordinata;
-                                kovetkezo_poz.y -= 10;
+                                kovetkezo_poz.y -= 13;
 
                                 for (int i = 0; i < 25; i++) {
                                         if (atfedes(kovetkezo_poz, jatek->palya[i])) {
@@ -53,7 +70,7 @@ void jatekos(Jatek *jatek) {
                         if (jatek->event.key.key == SDLK_D || jatek->event.key.key == SDLK_RIGHT) {
                                 bool mehet = true;
                                 SDL_FRect kovetkezo_poz = jatek->jatekos->jatekoskoordinata;
-                                kovetkezo_poz.x += 10;
+                                kovetkezo_poz.x += 13;
                                 for (int i = 0; i < 25; i++) {
                                         if (atfedes(kovetkezo_poz, jatek->palya[i])) {
                                                 mehet = false;
@@ -70,7 +87,7 @@ void jatekos(Jatek *jatek) {
                         if (jatek->event.key.key == SDLK_A || jatek->event.key.key == SDLK_LEFT) {
                                 bool mehet = true;
                                 SDL_FRect kovetkezo_poz = jatek->jatekos->jatekoskoordinata;
-                                kovetkezo_poz.x -= 10;
+                                kovetkezo_poz.x -= 13;
                                 for (int i = 0; i < 25; i++) {
                                         if (atfedes(kovetkezo_poz, jatek->palya[i])) {
                                                 mehet = false;
@@ -87,7 +104,7 @@ void jatekos(Jatek *jatek) {
                         if (jatek->event.key.key == SDLK_S || jatek->event.key.key == SDLK_DOWN) {
                                 bool mehet = true;
                                 SDL_FRect kovetkezo_poz = jatek->jatekos->jatekoskoordinata;
-                                kovetkezo_poz.y += 10;
+                                kovetkezo_poz.y += 13;
                                 for (int i = 0; i < 25; i++) {
                                         if (atfedes(kovetkezo_poz, jatek->palya[i])) {
                                                 mehet = false;
@@ -117,6 +134,11 @@ void jatekos_elokeszit(Jatek *jatek){
         jatek->jatekos->jatekoskoordinata.w = 56;
         jatek->jatekos->jatekoskoordinata.h = 83;
         jatek->idozitomegy = false;
+        jatek->mentes_volte = false;
+        jatek->pontok = 0;
+        for (int i = 0; i < 4; i++) {
+                jatek->mikor_kell_kezbe[i] = false;
+        }
 }
 void palya_elokeszit(Jatek *jatek) {
         jatek->palya = malloc(sizeof(SDL_FRect) * 25);
@@ -148,11 +170,13 @@ void palya_elokeszit(Jatek *jatek) {
         jatek->felvette_e_az_etelt = false;
 }
 
+
 void vendegek(Jatek *jatek) {
         SDL_FRect vendegforras_koordinatak[4] = {{29,24,64,148},{147, 31,60,152}, {49, 197, 42, 69}, {39,282, 62, 86}};
         SDL_FRect vendeg_ulo_koordinatak[4] = {{219,174, 64,148}, {522,176,60,152}, {579, 277, 42, 69}, {651,259,62, 86}};
+        SDL_FRect vendeg_kezbe[4] = {{248,251,45,30},{488,252,45,30}, {581, 326, 45, 30},{659,327,45,30}};
+        SDL_FRect etel_forras = {419,176,3219,2397};
         SDL_FRect felkialtojel_koordinatak = {85, 20, 89, 220};
-
 
         int vendeg_letezik_db = 0;
         for (int i = 0; i < 4; i++) {
@@ -160,15 +184,18 @@ void vendegek(Jatek *jatek) {
         }
         int j = rand() % 4;
         if (!jatek->vendeg_letezik[j] && vendeg_letezik_db < 3) {
-                jatek->vendeg_letezik[j] = (rand()%2 ? true : false);
-                j += jatek->vendeg_letezik[j];
+                jatek->vendeg_letezik[j] = (rand() % 100 < 2 ? true : false);
         }
+
+        SDL_FRect felkialtojel_cel[4];
 
         for (int i = 0; i < 4; i++) {
                 if (jatek->vendeg_letezik[i]){
                         SDL_RenderTexture(jatek->renderer, jatek->kepek.vendegek, &vendegforras_koordinatak[i] , &vendeg_ulo_koordinatak[i]);
-                        SDL_FRect felkialtojel_cel = {vendeg_ulo_koordinatak[i].x + (vendeg_ulo_koordinatak[i].w / 4), vendeg_ulo_koordinatak[i].y - 50 ,20, 50};
-                        SDL_RenderTexture(jatek->renderer, jatek->kepek.felkialtojel,&felkialtojel_koordinatak , &felkialtojel_cel);
+                        felkialtojel_cel[i] = (SDL_FRect) {vendeg_ulo_koordinatak[i].x + (vendeg_ulo_koordinatak[i].w / 4), vendeg_ulo_koordinatak[i].y - 50 ,20, 50};
+                        if (!jatek->mikor_kell_kezbe[i]) {
+                                SDL_RenderTexture(jatek->renderer, jatek->kepek.felkialtojel,&felkialtojel_koordinatak , &felkialtojel_cel[i]);
+                        }
                         // SDL_SetRenderDrawColor(jatek->renderer, 255, 0, 0,0);
                         //SDL_RenderFillRect(jatek->renderer, &felkialtojel_cel);
                 }
@@ -181,16 +208,32 @@ void vendegek(Jatek *jatek) {
         jatekos_nagy_hitbox.h += 40;
 
         for (int i = 0; i < 4; i++) {
-                if (SDL_HasRectIntersectionFloat(&jatekos_nagy_hitbox, &vendeg_ulo_koordinatak[i]) && jatek->felvette_e_az_etelt) {
-                        jatek->vendeg_letezik[i] = false;
+                if (SDL_HasRectIntersectionFloat(&jatekos_nagy_hitbox, &vendeg_ulo_koordinatak[i]) && jatek->felvette_e_az_etelt && !jatek->mikor_kell_kezbe[i] && jatek->vendeg_letezik[i]) {
                         jatek->felvette_e_az_etelt = false;
+                        etel_kezbe(jatek, &vendeg_ulo_koordinatak[i]);
+                        jatek->pontok++;
+                        char szoveg[11];
+                        sprintf(szoveg, "%d points", jatek->pontok);
+                        SDL_Color szin = {255, 255, 255, 255};
+                        SDL_Surface* surface = TTF_RenderText_Blended(jatek->kepek.betutipus, szoveg, 0, szin);
+                        jatek->pont_kep = SDL_CreateTextureFromSurface(jatek->renderer, surface);
+                        SDL_DestroySurface(surface);
+                        Hivas_fuggveny_param* parameterek = malloc(sizeof(Hivas_fuggveny_param));
+                        parameterek->i = i;
+                        parameterek->jatek = jatek;
+                        SDL_AddTimer(10000, jatekos_eltunik_hivasa, parameterek);
+                        jatek->mikor_kell_kezbe[i] = true;
+
+                }
+                if (jatek->mikor_kell_kezbe[i]) {
+                        SDL_RenderTexture(jatek->renderer, jatek->kepek.etel,&etel_forras , &vendeg_kezbe[i]);
                 }
         }
 }
 
 
 
-void etel_logika_es_letrehozas(Jatek *jatek) {
+void etel(Jatek *jatek) {
         SDL_FRect etel_forras = {419,176,3219,2397};
         SDL_FRect etel_cel = {198,143, 45, 30};
         SDL_RenderTexture(jatek->renderer, jatek->kepek.etel, &etel_forras , &etel_cel);
@@ -210,14 +253,23 @@ void etel_logika_es_letrehozas(Jatek *jatek) {
         SDL_RenderTexture(jatek->renderer, jatek->kepek.etel, &etel_forras, &etel_cel);
 }
 
-void jatekos_palya_felszabadit(Jatek *jatek) {
-        free(jatek->jatekos);
-        free(jatek->palya);
+void etel_kezbe(Jatek *jatek, SDL_FRect *vendeg_koordinatak) {
+        SDL_FRect etel_forras = {419,176,3219,2397};
+        SDL_FRect etel_megjelenik = {
+                vendeg_koordinatak->x,
+                vendeg_koordinatak->y - (vendeg_koordinatak->h)/2,
+                45,
+                30
+        };
+        SDL_RenderTexture(jatek->renderer, jatek->kepek.etel, &etel_forras, &etel_megjelenik);
 }
 
-
-
-
+void jatekos_palya_felszabadit(Jatek *jatek) {
+        free(jatek->jatekos);
+        jatek->jatekos = NULL;
+        free(jatek->palya);
+        jatek->palya = NULL;
+}
 
 
 

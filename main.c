@@ -8,7 +8,6 @@
 #include "SDL3_image/SDL_image.h"
 #include <stdbool.h>
 #include <time.h>
-
 #include "game/Resume/resume.h"
 
 
@@ -84,6 +83,14 @@ void texturat_betolt(Jatek *jatek) {
     }
     jatek->kepek.resume_gombok = SDL_CreateTextureFromSurface(jatek->renderer, surface);
     SDL_DestroySurface(surface);
+
+
+    jatek->kepek.betutipus = TTF_OpenFont("kepek/8-bit-pusab.ttf", 30);
+    if (jatek->kepek.betutipus == NULL) {
+        printf("Nem sikerult betolteni a kepek/8-bit-pusab.ttf fajlt.\n");
+        exit(1); //leáll a program
+    }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -93,7 +100,8 @@ int main(int argc, char *argv[]) {
         SDL_Log("Nem indithato az SDL: %s", SDL_GetError());
         exit(1);
     }
-    SDL_Window *window = SDL_CreateWindow("SDL peldaprogram", 900, 500, 0);
+    TTF_Init();
+    SDL_Window *window = SDL_CreateWindow("Pinceres jatek", 900, 500, 0);
     if (window == NULL) {
         SDL_Log("Nem hozhato letre az ablak: %s", SDL_GetError());
         exit(1);
@@ -124,6 +132,10 @@ int main(int argc, char *argv[]) {
     jatek.allapot = FOMENU;
     jatek.renderer = renderer;
     jatek.van_zene = false;
+    jatek.window = window;
+    jatek.dicsoseglista = NULL;
+    jatek.jatekos = NULL;
+    jatek.nev[0] = '\0';
 
     texturat_betolt(&jatek);
     jatekos_elokeszit(&jatek);
@@ -141,10 +153,14 @@ int main(int argc, char *argv[]) {
                         SDL_PutAudioStreamData(stream, wav_data, wav_data_len);
                     }
                 }
+                else {
+                    SDL_ClearAudioStream(stream);
+                }
                 switch (jatek.allapot) {
                     case START:
                         jatek_hatter(&jatek);
                         jatekos(&jatek);
+                        
                         break;
                     case FOMENU:
                         //menupontok megjelenitese
@@ -155,6 +171,7 @@ int main(int argc, char *argv[]) {
                         mute_unmute(&jatek);
                         break;
                     case LEADERBOARD:
+                        leaderboard_megjelenit(&jatek);
                         back(&jatek);
                         break;
                     case RESUME:
@@ -164,16 +181,14 @@ int main(int argc, char *argv[]) {
                         break;
                     case EXIT:
                         exit_vege(&jatek);
-                        SDL_DestroyWindow(window);
                         if (jatek.jatekos != NULL && jatek.palya != NULL) {
                             jatekos_palya_felszabadit(&jatek);
                         }
+                        exit(0);
                         break;
                     default:
                         break;
                 }
-
-
 
                 /* az elvegzett rajzolasok a kepernyore */
                 SDL_RenderPresent(renderer);

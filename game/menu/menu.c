@@ -7,7 +7,7 @@
 #include "../../debugmalloc.h"
 #include "SDL3/SDL.h"
 #include "../game.h"
-#include "debugmalloc.h"
+#include "../../debugmalloc.h"
 
 // itt van a gomb típusa
 typedef struct Gomb {
@@ -91,6 +91,10 @@ void back(Jatek *jatek) {
             }
         }
     }
+    if (jatek->dicsoseglista != NULL) {
+        dicsoseg_free(jatek->dicsoseglista);
+        jatek->dicsoseglista = NULL;
+    }
 }
 void klikkelte_mute(Jatek *jatek, Gomb_mute* mute) {
     if (jatek->event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
@@ -116,23 +120,18 @@ void mute_unmute(Jatek *jatek) {
         //SDL_RenderFillRect(jatek->renderer, &mute[i].rect);
         SDL_RenderTexture(jatek->renderer, jatek->kepek.gombok,&mute[i].textura_koordinata,&mute[i].rect);
         SDL_SetRenderDrawColor(jatek->renderer,0, 0, 0, 0);
+
     }
-
-
-
         klikkelte_mute(jatek, mute);
 
 }
 
-void zenelegyen() {
-
-
-}
 
 void exit_vege(Jatek *jatek) {
   SDL_DestroyRenderer(jatek->renderer);
     SDL_DestroyTexture(jatek->kepek.gombok);
     SDL_DestroyTexture(jatek->kepek.hatter);
+    SDL_DestroyWindow(jatek->window);
 }
 
 

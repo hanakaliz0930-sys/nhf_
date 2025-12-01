@@ -11,12 +11,12 @@ typedef struct Jatekos {
     SDL_FRect jatekoskoordinata;
 }Jatekos;
 
-
 void jatek_hatter(Jatek* jatek);
 void jatekos(Jatek *jatek);
 void jatekos_elokeszit(Jatek *jatek);
 void palya_elokeszit(Jatek *jatek);
 void jatekos_palya_felszabadit(Jatek *jatek);
 void vendegek(Jatek *jatek);
-void etel_logika_es_letrehozas(Jatek *jatek);
+void etel_kezbe(Jatek *jatek, SDL_FRect *vendeg_koordinatak);
+void etel(Jatek *jatek);
 #endif //NHF_JATEK_H
